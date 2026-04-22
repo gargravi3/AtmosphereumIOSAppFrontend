@@ -87,6 +87,16 @@ struct GoalDetailView: View {
             if newStatus == GoalStatus.complete.rawValue {
                 Haptics.success()
                 celebrationTick &+= 1
+                // After the confetti has had a beat to register, bounce
+                // back to Home and let the coin cards take over the
+                // celebration with their count-up + glow.
+                Task {
+                    try? await Task.sleep(nanoseconds: 1_200_000_000)
+                    await MainActor.run {
+                        app.selectedTab = .home
+                        onBack()
+                    }
+                }
             }
         }
         .navigationBarBackButtonHidden()
@@ -189,7 +199,19 @@ struct GoalDetailView: View {
                     // feels instant. The confetti + success haptic gate on
                     // the actual transition to `.complete` via onChange.
                     Haptics.impact(.medium)
-                    Task { await app.updateGoal(goal.id, status: .complete) }
+                    // Snapshot *before* the PUT + reload overwrites these.
+                    // Home uses these as the starting point for its count-up.
+                    let snapshot = CoinCelebration(
+                        reward:    goal.coinReward,
+                        oldCoins:  app.coinsTotal,
+                        oldKg:     app.coinsEquivalentKg
+                    )
+                    Task {
+                        await app.updateGoal(goal.id, status: .complete)
+                        await MainActor.run {
+                            app.pendingCoinCelebration = snapshot
+                        }
+                    }
                 }
             }
             if status == .complete {

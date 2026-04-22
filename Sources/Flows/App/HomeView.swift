@@ -11,6 +11,15 @@ struct HomeView: View {
     let onBrowseReduce: () -> Void
     let onMenu: () -> Void
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    // Overridden values used during the post-goal count-up celebration.
+    // When nil, cards display the live server values. When set, they
+    // display these interpolated values instead while ticking up.
+    @State private var displayedCoins: Int? = nil
+    @State private var displayedKg: Int? = nil
+    @State private var celebrating = false
+
     // Zero-coin state stays visually loud (the "0" is motivating) but we
     // bolt an explicit CTA underneath so the user knows where to go next.
     private var hasNoCoins: Bool { app.coinsTotal == 0 }
@@ -43,9 +52,10 @@ struct HomeView: View {
 
                         CoinCardView(
                             style: .navyCoin,
-                            value: app.coinsTotal,
+                            value: displayedCoins ?? app.coinsTotal,
                             title: "Atmosm Coins",
-                            prefix: nil
+                            prefix: nil,
+                            boosted: celebrating
                         )
 
                         Text("Which is equivalent to")
@@ -55,9 +65,10 @@ struct HomeView: View {
 
                         CoinCardView(
                             style: .slateCloud,
-                            value: app.coinsEquivalentKg,
+                            value: displayedKg ?? app.coinsEquivalentKg,
                             title: "kg of CO₂",
-                            prefix: "reducing"
+                            prefix: "reducing",
+                            boosted: celebrating
                         )
 
                         if hasNoCoins {
@@ -95,11 +106,74 @@ struct HomeView: View {
         .task {
             await app.reloadFromServer()
             await app.loadCatalog()
+            // If we landed on Home because a goal was just completed,
+            // run the celebration as soon as the view appears.
+            await runCelebrationIfPending()
+        }
+        .onChange(of: app.pendingCoinCelebration) { _, new in
+            guard new != nil else { return }
+            Task { await runCelebrationIfPending() }
         }
         .refreshable {
             await app.reloadFromServer(force: true)
         }
         .animation(.spring(response: 0.45, dampingFraction: 0.85), value: app.coinsTotal)
+    }
+
+    // Drives the count-up. Starts at the old totals captured at the
+    // moment of completion and walks both coin + kg values up to the
+    // new server totals in lockstep. On each tick SwiftUI's numericText
+    // contentTransition rolls the digits smoothly.
+    private func runCelebrationIfPending() async {
+        guard let snapshot = app.pendingCoinCelebration else { return }
+        let targetCoins = app.coinsTotal
+        let targetKg    = app.coinsEquivalentKg
+
+        // If nothing actually changed (e.g. server returned same totals),
+        // bail without any fanfare to avoid a misleading stuck animation.
+        guard targetCoins > snapshot.oldCoins || targetKg > snapshot.oldKg else {
+            await MainActor.run { app.pendingCoinCelebration = nil }
+            return
+        }
+
+        // Reduce Motion: skip the count-up, keep the cards at live values.
+        if reduceMotion {
+            Haptics.success()
+            await MainActor.run { app.pendingCoinCelebration = nil }
+            return
+        }
+
+        await MainActor.run {
+            displayedCoins = snapshot.oldCoins
+            displayedKg    = snapshot.oldKg
+            celebrating    = true
+        }
+
+        // Tick ~25 fps, incrementing each value by 1 until it reaches
+        // the target. We advance both independently so if the two deltas
+        // differ the "slower" one still finishes smoothly.
+        let tickNanos: UInt64 = 40_000_000  // 40ms
+        var c = snapshot.oldCoins
+        var k = snapshot.oldKg
+        while c < targetCoins || k < targetKg {
+            try? await Task.sleep(nanoseconds: tickNanos)
+            if c < targetCoins { c += 1 }
+            if k < targetKg    { k += 1 }
+            await MainActor.run {
+                displayedCoins = c
+                displayedKg    = k
+            }
+        }
+
+        // Settle: release the overrides, drop the glow/boost, fire a
+        // final success haptic to punctuate.
+        Haptics.success()
+        await MainActor.run {
+            displayedCoins = nil
+            displayedKg    = nil
+            celebrating    = false
+            app.pendingCoinCelebration = nil
+        }
     }
 
     // Compact nudge shown only while coins == 0, sitting between the

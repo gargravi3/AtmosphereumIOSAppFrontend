@@ -21,6 +21,11 @@ final class AppState {
     var coinsEquivalentKg: Int = 0
     var coinsNeededForNetZero: Int = 0
 
+    // Set by GoalDetailView right before bouncing back to Home so Home
+    // can run its count-up + glow celebration. HomeView nils this out
+    // when the animation completes so it only fires once per completion.
+    var pendingCoinCelebration: CoinCelebration? = nil
+
     // Goal catalog + current-user goals
     var catalog: [Goal] = []
     var myGoals: [UserGoal] = []
@@ -140,4 +145,13 @@ final class AppState {
     func myGoal(for goalID: UUID) -> UserGoal? {
         myGoals.first { $0.goalId == goalID }
     }
+}
+
+// Snapshot captured on goal completion so Home can animate from the old
+// totals up to the new server-confirmed totals. Captured just *before*
+// the forced reload that pulls in the new values.
+struct CoinCelebration: Equatable {
+    let reward: Int
+    let oldCoins: Int
+    let oldKg: Int
 }
