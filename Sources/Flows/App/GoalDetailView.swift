@@ -10,6 +10,9 @@ struct GoalDetailView: View {
     let onBack: () -> Void
 
     @State private var isProcessing = false
+    // Bumped whenever this goal transitions into `.complete`, which drives
+    // the one-shot confetti burst overlay.
+    @State private var celebrationTick = 0
 
     var body: some View {
         ZStack {
@@ -70,6 +73,20 @@ struct GoalDetailView: View {
                     .padding(.horizontal, 24)
                     .padding(.bottom, 32)
                 }
+            }
+        }
+        .overlay(
+            ConfettiBurst(trigger: celebrationTick)
+                .allowsHitTesting(false)
+        )
+        .onChange(of: app.myGoal(for: goal.id)?.status) { _, newStatus in
+            // Celebrate when the server confirms the goal flipped to
+            // `.complete`. Driving off the actual status change means we
+            // also celebrate if the user completes from another device or
+            // the retry path eventually succeeds.
+            if newStatus == GoalStatus.complete.rawValue {
+                Haptics.success()
+                celebrationTick &+= 1
             }
         }
         .navigationBarBackButtonHidden()
@@ -162,11 +179,16 @@ struct GoalDetailView: View {
         HStack(spacing: 12) {
             if status == .added {
                 PrimaryButton(title: "Start working on it", style: .navy) {
+                    Haptics.impact(.medium)
                     Task { await app.updateGoal(goal.id, status: .inProgress) }
                 }
             }
             if status == .inProgress {
                 PrimaryButton(title: "Mark Complete", style: .green) {
+                    // Fire feedback *before* the network round-trip so it
+                    // feels instant. The confetti + success haptic gate on
+                    // the actual transition to `.complete` via onChange.
+                    Haptics.impact(.medium)
                     Task { await app.updateGoal(goal.id, status: .complete) }
                 }
             }

@@ -118,7 +118,9 @@ final class AppState {
     func addGoal(_ goalID: UUID) async {
         do {
             _ = try await NetworkService.shared.addGoal(goalID)
-            await reloadFromServer()
+            // Force past the 5s freshness cache — we just mutated server
+            // state so the cache is definitely stale.
+            await reloadFromServer(force: true)
         } catch {
             print("[AppState] addGoal failed: \(error)")
         }
@@ -127,7 +129,7 @@ final class AppState {
     func updateGoal(_ goalID: UUID, status: GoalStatus) async {
         do {
             _ = try await NetworkService.shared.updateGoalStatus(goalID, status: status)
-            await reloadFromServer()
+            await reloadFromServer(force: true)
         } catch {
             print("[AppState] updateGoalStatus failed: \(error)")
         }
