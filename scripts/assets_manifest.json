@@ -1,0 +1,45 @@
+{
+  "file_key": "g4B1cM6dN528mLXR6PWIWp",
+  "assets": [
+    { "name": "AtmosmLogo",         "node_id": "17:574"   },
+    { "name": "SplashBackground",   "node_id": "23:1248"  },
+
+    { "name": "InterestCleanWater", "node_id": "112:139"  },
+    { "name": "InterestEnergy",     "node_id": "94:57"    },
+    { "name": "InterestIndustry",   "node_id": "94:102"   },
+    { "name": "InterestCities",     "node_id": "94:67"    },
+    { "name": "InterestClimate",    "node_id": "94:114"   },
+    { "name": "InterestBelowWater", "node_id": "94:136"   },
+    { "name": "InterestOnLand",     "node_id": "94:126"   },
+
+    { "name": "IndustryRetail",     "node_id": "27:701"   },
+    { "name": "IndustryAviation",   "node_id": "27:628"   },
+    { "name": "IndustryFood",       "node_id": "27:680"   },
+    { "name": "IndustryServices",   "node_id": "27:690"   },
+
+    { "name": "RegionAsia",         "node_id": "24:468"   },
+    { "name": "RegionMiddleEast",   "node_id": "94:146"   },
+    { "name": "RegionEurope",       "node_id": "24:542"   },
+    { "name": "RegionNorthAmerica", "node_id": "24:373"   },
+    { "name": "RegionSouthAmerica", "node_id": "24:555"   },
+    { "name": "RegionAfrica",       "node_id": "24:450"   },
+
+    { "name": "InfoCardDriving",    "node_id": "36:1824"  },
+    { "name": "InfoCardFlights",    "node_id": "99:518"   },
+    { "name": "InfoCardFood",       "node_id": "36:1822"  },
+    { "name": "InfoCardUtilities",  "node_id": "36:1821"  },
+    { "name": "InfoCardWaste",      "node_id": "36:1685"  },
+
+    { "name": "ReduceCardForest",   "node_id": "38:3234"  },
+    { "name": "ReduceCardCommunity","node_id": "55:162"   },
+
+    { "name": "AvatarAlina",        "node_id": "157:178"  },
+    { "name": "AvatarAdam",         "node_id": "157:179"  },
+    { "name": "AvatarMonica",       "node_id": "109:100"  },
+
+    { "name": "CarbonFootprintIllustration", "node_id": "426:965"  },
+
+    { "name": "AtmosmCoin",                  "node_id": "154:386"  },
+    { "name": "CO2Cloud",                    "node_id": "172:1398" }
+  ]
+}
