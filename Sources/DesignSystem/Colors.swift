@@ -52,4 +52,17 @@ enum AppColor {
     static let textSecondary = Color(hex: "#555555")
     static let accentRed = Color(hex: "#D32F2F")
     static let stepInactive = Color(hex: "#E5E7EB")
+
+    // Card tones — keep these named so design shifts don't require edits
+    // at every call site.
+    static let slateCard = Color.black.opacity(0.6)
+}
+
+// Standard corner-radius scale. Use these instead of magic numbers so the
+// whole app keeps a consistent rhythm.
+enum AppRadius {
+    static let small: CGFloat  = 8
+    static let medium: CGFloat = 12
+    static let large: CGFloat  = 16
+    static let pill: CGFloat   = 999   // use with RoundedRectangle or Capsule()
 }

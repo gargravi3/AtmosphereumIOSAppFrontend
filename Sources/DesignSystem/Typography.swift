@@ -15,11 +15,14 @@ enum AppFont {
 }
 
 extension Font {
-    static let atmosmTitle      = AppFont.bold(24)
-    static let atmosmHeadline   = AppFont.bold(20)
-    static let atmosmBody       = AppFont.regular(16)
-    static let atmosmLabel      = AppFont.bold(14)
-    static let atmosmCaption    = AppFont.regular(12)
-    // Figma: button text 24.192pt Bold IBM Plex Sans
-    static let atmosmButton     = AppFont.bold(24)
+    static let atmosmTitle    = AppFont.bold(24)
+    static let atmosmHeadline = AppFont.bold(20)
+    static let atmosmBody     = AppFont.regular(16)
+    static let atmosmLabel    = AppFont.bold(14)
+    static let atmosmCaption  = AppFont.regular(12)
+    // Standard iOS button text: 17pt semibold/bold. The 24pt Figma value
+    // only applied to hero Welcome screen buttons; regular CTAs use this.
+    static let atmosmButton   = AppFont.bold(17)
+    // Kept for the big Welcome / Signup hero CTAs.
+    static let atmosmButtonHero = AppFont.bold(22)
 }

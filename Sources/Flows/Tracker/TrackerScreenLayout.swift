@@ -29,20 +29,16 @@ struct TrackerScreenLayout<Body: View>: View {
                     .padding(.top, 8)
 
                 HStack {
-                    Button(action: onBack) {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 20, weight: .semibold))
-                            .foregroundStyle(AppColor.textPrimary)
-                    }
+                    IconButton(systemName: "chevron.left", accessibilityLabel: "Back", action: onBack)
                     Spacer()
                     Text(title)
                         .font(.atmosmTitle)
                         .foregroundStyle(AppColor.textPrimary)
                     Spacer()
-                    Spacer().frame(width: 20)
+                    Color.clear.frame(width: 44, height: 44)
                 }
-                .padding(.horizontal, 24)
-                .padding(.top, 12)
+                .padding(.horizontal, 12)
+                .padding(.top, 8)
 
                 ScrollView(showsIndicators: false) {
                     content()

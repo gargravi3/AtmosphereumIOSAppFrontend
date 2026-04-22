@@ -19,19 +19,15 @@ struct GoalDetailView: View {
                 // Top bar
                 ZStack {
                     HStack {
-                        Button(action: onBack) {
-                            Image(systemName: "chevron.left")
-                                .font(.system(size: 20, weight: .semibold))
-                                .foregroundStyle(AppColor.textPrimary)
-                        }
+                        IconButton(systemName: "chevron.left", accessibilityLabel: "Back", action: onBack)
                         Spacer()
                     }
                     Text("Reduce")
                         .font(.atmosmTitle)
                         .foregroundStyle(AppColor.primaryNavy)
                 }
-                .padding(.horizontal, 24)
-                .padding(.top, 8)
+                .padding(.horizontal, 12)
+                .padding(.top, 4)
 
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 16) {
@@ -77,7 +73,9 @@ struct GoalDetailView: View {
             }
         }
         .navigationBarBackButtonHidden()
-        .task { await app.reloadFromServer() }
+        // NOTE: intentionally no `.task { reload }` here — AppShellView
+        // already refreshes on tab switch, and reloadFromServer() has a
+        // 5s freshness cache, so we'd either duplicate work or no-op.
     }
 
     // MARK: - Pieces

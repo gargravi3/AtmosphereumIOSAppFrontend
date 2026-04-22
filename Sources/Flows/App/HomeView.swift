@@ -63,6 +63,7 @@ struct HomeView: View {
                         if hasNoCoins {
                             zeroCoinCTA
                                 .padding(.top, 4)
+                                .transition(.opacity.combined(with: .move(edge: .top)))
                         }
 
                         Group {
@@ -77,6 +78,7 @@ struct HomeView: View {
                         }
                         .font(.atmosmBody)
                         .foregroundStyle(AppColor.textPrimary)
+                        .minimumScaleFactor(0.85)
                         .padding(.top, 12)
 
                         PrimaryButton(title: "See your footprint", style: .navy) {
@@ -95,8 +97,9 @@ struct HomeView: View {
             await app.loadCatalog()
         }
         .refreshable {
-            await app.reloadFromServer()
+            await app.reloadFromServer(force: true)
         }
+        .animation(.spring(response: 0.45, dampingFraction: 0.85), value: app.coinsTotal)
     }
 
     // Compact nudge shown only while coins == 0, sitting between the
@@ -122,12 +125,12 @@ struct HomeView: View {
             .padding(14)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
-                RoundedRectangle(cornerRadius: 12)
+                RoundedRectangle(cornerRadius: AppRadius.medium)
                     .fill(Color.white)
                     .shadow(color: .black.opacity(0.05), radius: 4, y: 2)
             )
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.atmosm)
     }
 }
 
@@ -136,13 +139,14 @@ struct HomeHeader: View {
     var body: some View {
         ZStack {
             HStack {
-                Button(action: onMenu) {
-                    Image(systemName: "line.3.horizontal")
-                        .font(.system(size: 22, weight: .semibold))
-                        .foregroundStyle(AppColor.textPrimary)
-                }
+                IconButton(
+                    systemName: "line.3.horizontal",
+                    accessibilityLabel: "Menu",
+                    size: 22,
+                    action: onMenu
+                )
                 Spacer()
-                Spacer().frame(width: 20)
+                Color.clear.frame(width: 44, height: 44)
             }
 
             AtmosmLogoImage()

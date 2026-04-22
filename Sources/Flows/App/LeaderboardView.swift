@@ -1,5 +1,16 @@
 import SwiftUI
 
+// A single source of truth for the leaderboard screen's state.
+// Using an enum prevents illegal combinations like `isLoading=true` while
+// also having `entries != []` and `errorMessage != nil` all at once.
+private enum LeaderboardPhase: Equatable {
+    case idle
+    case loading             // first load — show full-width spinner
+    case refreshing          // subsequent reload — keep old list visible
+    case loaded
+    case failed(String)
+}
+
 struct LeaderboardView: View {
     @Bindable var app: AppState
     let onMenu: () -> Void
@@ -7,8 +18,7 @@ struct LeaderboardView: View {
     @State private var scope: LeaderboardScope = .global
     @State private var entries: [LeaderboardEntry] = []
     @State private var myRank: Int? = nil
-    @State private var isLoading = false
-    @State private var errorMessage: String? = nil
+    @State private var phase: LeaderboardPhase = .idle
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -64,22 +74,32 @@ struct LeaderboardView: View {
                     // load. Later refreshes (pull-to-refresh, scope changes)
                     // keep the last-known list visible underneath so rows
                     // don't flash in/out.
-                    if isLoading && entries.isEmpty {
+                    switch phase {
+                    case .loading:
                         HStack { Spacer(); ProgressView(); Spacer() }
                             .padding(.vertical, 24)
-                    } else if entries.isEmpty, let err = errorMessage {
+                    case .failed(let err) where entries.isEmpty:
                         Text(err)
                             .font(.atmosmCaption)
                             .foregroundStyle(.red)
-                    } else if entries.isEmpty {
+                    case _ where entries.isEmpty && phase != .loading:
                         Text("No entries yet. Complete your onboarding to appear here.")
                             .font(.atmosmCaption)
                             .foregroundStyle(AppColor.textSecondary)
                             .padding(.vertical, 16)
-                    } else {
+                    default:
                         VStack(spacing: 0) {
-                            ForEach(entries, id: \.id) { entry in
+                            ForEach(Array(entries.enumerated()), id: \.element.id) { index, entry in
                                 leaderboardRow(entry: entry)
+                                    .transition(.asymmetric(
+                                        insertion: .move(edge: .trailing).combined(with: .opacity),
+                                        removal: .opacity
+                                    ))
+                                    .animation(
+                                        .spring(response: 0.45, dampingFraction: 0.85)
+                                            .delay(Double(index) * 0.035),
+                                        value: entries.map(\.id)
+                                    )
                                 Divider()
                             }
                         }
@@ -125,12 +145,20 @@ struct LeaderboardView: View {
                 .foregroundStyle(AppColor.primaryNavy)
                 .frame(width: 32, alignment: .leading)
 
-            // Initials avatar — no stock photos.
+            // Initials avatar — no stock photos. Fall back to an SF person
+            // glyph if the user somehow has no initials (e.g. all-symbol name).
             ZStack {
                 Circle().fill(AppColor.lightBluePill)
-                Text(initials(for: entry))
-                    .font(.atmosmCaption.bold())
-                    .foregroundStyle(AppColor.primaryNavy)
+                let init_ = initials(for: entry)
+                if init_.isEmpty {
+                    Image(systemName: "person.fill")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundStyle(AppColor.primaryNavy)
+                } else {
+                    Text(init_)
+                        .font(.atmosmCaption.bold())
+                        .foregroundStyle(AppColor.primaryNavy)
+                }
             }
             .frame(width: 44, height: 44)
 
@@ -171,7 +199,9 @@ struct LeaderboardView: View {
     }
 
     private func reload() async {
-        await MainActor.run { isLoading = true; errorMessage = nil }
+        await MainActor.run {
+            phase = entries.isEmpty ? .loading : .refreshing
+        }
         do {
             let res = try await NetworkService.shared.fetchLeaderboard(scope: scope, limit: 20)
             // If the enclosing Task was cancelled (e.g. SwiftUI killed the
@@ -179,19 +209,18 @@ struct LeaderboardView: View {
             // anything — just exit quietly.
             try Task.checkCancellation()
             await MainActor.run {
-                entries = res.entries
-                myRank  = res.myRank
-                isLoading = false
+                withAnimation(.spring(response: 0.45, dampingFraction: 0.85)) {
+                    entries = res.entries
+                }
+                myRank = res.myRank
+                phase  = .loaded
             }
         } catch is CancellationError {
-            await MainActor.run { isLoading = false }
+            await MainActor.run { phase = entries.isEmpty ? .idle : .loaded }
         } catch let urlErr as URLError where urlErr.code == .cancelled {
-            await MainActor.run { isLoading = false }
+            await MainActor.run { phase = entries.isEmpty ? .idle : .loaded }
         } catch {
-            await MainActor.run {
-                errorMessage = error.localizedDescription
-                isLoading = false
-            }
+            await MainActor.run { phase = .failed(error.localizedDescription) }
         }
     }
 }

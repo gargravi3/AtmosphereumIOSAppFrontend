@@ -15,8 +15,8 @@ struct CoinCardView: View {
 
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 12)
-                .fill(style == .navyCoin ? AppColor.primaryNavy : AppColor.textPrimary.opacity(0.6))
+            RoundedRectangle(cornerRadius: AppRadius.medium)
+                .fill(style == .navyCoin ? AppColor.primaryNavy : AppColor.slateCard)
 
             HStack(alignment: .center, spacing: 16) {
                 VStack(alignment: .leading, spacing: 4) {
@@ -28,6 +28,9 @@ struct CoinCardView: View {
                     Text("\(value)")
                         .font(.system(size: 54, weight: .heavy))
                         .foregroundStyle(.white)
+                        .contentTransition(.numericText())
+                        .minimumScaleFactor(0.5)
+                        .lineLimit(1)
                     Text(title)
                         .font(.atmosmBody.bold())
                         .foregroundStyle(.white)
@@ -40,32 +43,20 @@ struct CoinCardView: View {
             .padding(.vertical, 16)
         }
         .frame(height: 138)
+        .animation(.spring(response: 0.45, dampingFraction: 0.8), value: value)
     }
 
     @ViewBuilder
     private var artwork: some View {
         switch style {
         case .navyCoin:
-            if UIImage(named: "AtmosmCoin") != nil {
-                SpinningCoin { Image("AtmosmCoin").resizable().scaledToFit() }
-            } else {
-                SpinningCoin {
-                    Image(systemName: "dollarsign.circle.fill")
-                        .resizable().scaledToFit()
-                        .foregroundStyle(.yellow)
-                }
+            SpinningCoin {
+                AssetOrSymbolImage(assetName: "AtmosmCoin", systemName: "dollarsign.circle.fill", tint: nil)
             }
         case .slateCloud:
-            if UIImage(named: "CO2Cloud") != nil {
-                DriftingCloud {
-                    Image("CO2Cloud").resizable().scaledToFit().colorInvert()
-                }
-            } else {
-                DriftingCloud {
-                    Image(systemName: "cloud.fill")
-                        .resizable().scaledToFit()
-                        .foregroundStyle(.white)
-                }
+            DriftingCloud {
+                AssetOrSymbolImage(assetName: "CO2Cloud", systemName: "cloud.fill", tint: .white)
+                    .colorInvert()
             }
         }
     }
@@ -101,6 +92,14 @@ private struct SpinningCoin<Content: View>: View {
                     hover = -6
                 }
             }
+            // Pause animations when scrolled off-screen or tab hidden —
+            // otherwise Core Animation keeps stepping them at 60fps forever.
+            .onDisappear {
+                withAnimation(.linear(duration: 0)) {
+                    spin = 0
+                    hover = 0
+                }
+            }
     }
 }
 
@@ -124,6 +123,12 @@ private struct DriftingCloud<Content: View>: View {
                 }
                 withAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true)) {
                     bob = -5
+                }
+            }
+            .onDisappear {
+                withAnimation(.linear(duration: 0)) {
+                    drift = 0
+                    bob = 0
                 }
             }
     }

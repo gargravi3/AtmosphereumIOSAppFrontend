@@ -22,20 +22,20 @@ struct SignupView: View {
                 // Trailing spacer keeps the logo visually centered.
                 ZStack {
                     HStack {
-                        Button(action: onBack) {
-                            Image(systemName: "chevron.left")
-                                .font(.system(size: 18, weight: .semibold))
-                                .foregroundStyle(AppColor.primaryNavy)
-                                .padding(8)
-                        }
-                        .buttonStyle(.plain)
+                        IconButton(
+                            systemName: "chevron.left",
+                            accessibilityLabel: "Back",
+                            size: 18,
+                            color: AppColor.primaryNavy,
+                            action: onBack
+                        )
                         Spacer()
                     }
                     AtmosmLogoImage()
                         .frame(width: 50, height: 61)
                 }
-                .padding(.top, 8)
-                .padding(.horizontal, 8)
+                .padding(.top, 4)
+                .padding(.horizontal, 4)
                 .padding(.bottom, 20)
 
                 ScrollView(showsIndicators: false) {

@@ -249,11 +249,7 @@ struct ReduceCategoryListView: View {
             VStack(spacing: 0) {
                 ZStack {
                     HStack {
-                        Button(action: onBack) {
-                            Image(systemName: "chevron.left")
-                                .font(.system(size: 20, weight: .semibold))
-                                .foregroundStyle(AppColor.textPrimary)
-                        }
+                        IconButton(systemName: "chevron.left", accessibilityLabel: "Back", action: onBack)
                         Spacer()
                     }
                     Text(category)
@@ -262,8 +258,8 @@ struct ReduceCategoryListView: View {
                         .lineLimit(1)
                         .minimumScaleFactor(0.7)
                 }
-                .padding(.horizontal, 24)
-                .padding(.top, 8)
+                .padding(.horizontal, 12)
+                .padding(.top, 4)
 
                 ScrollView(showsIndicators: false) {
                     LazyVStack(alignment: .leading, spacing: 12) {

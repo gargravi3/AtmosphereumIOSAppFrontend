@@ -14,19 +14,15 @@ struct FootprintDetailView: View {
             VStack(spacing: 0) {
                 ZStack {
                     HStack {
-                        Button(action: onBack) {
-                            Image(systemName: "chevron.left")
-                                .font(.system(size: 20, weight: .semibold))
-                                .foregroundStyle(AppColor.textPrimary)
-                        }
+                        IconButton(systemName: "chevron.left", accessibilityLabel: "Back", action: onBack)
                         Spacer()
                     }
                     Text("Your Footprint")
                         .font(.atmosmTitle)
                         .foregroundStyle(AppColor.primaryNavy)
                 }
-                .padding(.horizontal, 24)
-                .padding(.top, 8)
+                .padding(.horizontal, 12)
+                .padding(.top, 4)
 
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 16) {

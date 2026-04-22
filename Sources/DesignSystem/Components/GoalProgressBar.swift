@@ -15,6 +15,7 @@ struct GoalProgressBar: View {
                     Capsule()
                         .fill(AppColor.primaryNavy)
                         .frame(width: geo.size.width * fraction, height: 4)
+                        .animation(.spring(response: 0.5, dampingFraction: 0.82), value: fraction)
                 }
             }
             .frame(height: 4)

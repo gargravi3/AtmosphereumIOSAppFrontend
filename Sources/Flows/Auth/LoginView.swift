@@ -22,21 +22,21 @@ struct LoginView: View {
 
             VStack(alignment: .leading, spacing: 0) {
                 HStack {
-                    Button(action: onBack) {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundStyle(AppColor.primaryNavy)
-                            .padding(8)
-                    }
+                    IconButton(
+                        systemName: "chevron.left",
+                        accessibilityLabel: "Back",
+                        size: 18,
+                        color: AppColor.primaryNavy,
+                        action: onBack
+                    )
                     Spacer()
                     AtmosmLogoImage()
                         .frame(width: 40, height: 48)
                     Spacer()
-                    // spacer for symmetry with chevron button
-                    Color.clear.frame(width: 34, height: 34)
+                    Color.clear.frame(width: 44, height: 44)
                 }
-                .padding(.top, 8)
-                .padding(.horizontal, 16)
+                .padding(.top, 4)
+                .padding(.horizontal, 8)
 
                 Text("Welcome back")
                     .font(.atmosmTitle)

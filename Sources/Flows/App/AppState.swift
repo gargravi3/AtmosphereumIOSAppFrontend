@@ -56,9 +56,9 @@ final class AppState {
         self.tonsFood      = profile.tonsFood
         self.tonsUtilities = profile.tonsUtilities
         self.tonsWaste     = profile.tonsWaste
-        self.coinsTotal    = profile.coinsTotal ?? 0
-        self.coinsEquivalentKg = profile.coinsTotal ?? 0
-        self.coinsNeededForNetZero = max(Int((profile.tonsTotal ?? 0) * 1000) - (profile.coinsTotal ?? 0), 0)
+        // Coin totals intentionally come from /coins via apply(coins:) —
+        // the profile's coin_total is a denormalized mirror we don't need
+        // here. Keeping only one source of truth avoids ordering bugs.
     }
 
     func apply(coins: CoinsResponse) {
@@ -67,20 +67,32 @@ final class AppState {
         self.coinsNeededForNetZero = coins.neededForNetZero
     }
 
+    /// Tracks when we last successfully reloaded so `reloadFromServer()`
+    /// can short-circuit if called again within `staleAfter`.
+    private var lastLoadedAt: Date? = nil
+    private let staleAfter: TimeInterval = 5
+
     /// Fetches the latest profile from the backend. Safe to call multiple
-    /// times; updates in-place.
-    func reloadFromServer() async {
+    /// times; updates in-place. The three independent endpoints are
+    /// fetched in parallel so the user waits one RTT instead of three.
+    /// Pass `force: true` to bypass the 5-second freshness cache.
+    func reloadFromServer(force: Bool = false) async {
         guard await NetworkService.shared.isAuthenticated else { return }
+        if !force, let last = lastLoadedAt, Date().timeIntervalSince(last) < staleAfter {
+            return
+        }
         await MainActor.run { self.isLoadingProfile = true; self.profileError = nil }
         do {
-            let profile = try await NetworkService.shared.getProfile()
-            let coins   = try await NetworkService.shared.fetchCoins()
-            let myGoals = try await NetworkService.shared.fetchMyGoals()
+            async let profile = NetworkService.shared.getProfile()
+            async let coins   = NetworkService.shared.fetchCoins()
+            async let goals   = NetworkService.shared.fetchMyGoals()
+            let (p, c, g) = try await (profile, coins, goals)
             await MainActor.run {
-                self.apply(profile: profile)
-                self.apply(coins: coins)
-                self.myGoals = myGoals
+                self.apply(profile: p)
+                self.apply(coins: c)
+                self.myGoals = g
                 self.isLoadingProfile = false
+                self.lastLoadedAt = Date()
             }
         } catch {
             await MainActor.run {

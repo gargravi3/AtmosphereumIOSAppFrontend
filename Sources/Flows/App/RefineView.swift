@@ -46,19 +46,15 @@ struct RefineView: View {
             VStack(spacing: 0) {
                 ZStack {
                     HStack {
-                        Button(action: onBack) {
-                            Image(systemName: "chevron.left")
-                                .font(.system(size: 20, weight: .semibold))
-                                .foregroundStyle(AppColor.textPrimary)
-                        }
+                        IconButton(systemName: "chevron.left", accessibilityLabel: "Back", action: onBack)
                         Spacer()
                     }
                     Text("Refine")
                         .font(.atmosmTitle)
                         .foregroundStyle(AppColor.primaryNavy)
                 }
-                .padding(.horizontal, 24)
-                .padding(.top, 8)
+                .padding(.horizontal, 12)
+                .padding(.top, 4)
 
                 Text("Tap a category to edit your answers. Your footprint updates after each save.")
                     .font(.atmosmCaption)

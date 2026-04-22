@@ -28,40 +28,63 @@ struct DonutChart: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var progress: CGFloat = 0
 
+    // Cached formatters — creating one per frame during the count-up
+    // animation caused measurable CPU. One per decimal-place is plenty.
+    private static let formatters: [Int: NumberFormatter] = {
+        var map: [Int: NumberFormatter] = [:]
+        for d in 0...3 {
+            let f = NumberFormatter()
+            f.numberStyle = .decimal
+            f.minimumFractionDigits = d
+            f.maximumFractionDigits = d
+            map[d] = f
+        }
+        return map
+    }()
+
     var body: some View {
-        GeometryReader { geo in
-            let size = min(geo.size.width, geo.size.height)
-            let radius = size / 2 - lineWidth / 2
-            let sum = segments.reduce(0) { $0 + $1.value }
+        // Rely on the parent's explicit .frame(width:height:) instead of
+        // a GeometryReader. Every existing caller already pins a size, so
+        // this drops a layout pass and keeps the view self-sizing.
+        content
+    }
 
-            ZStack {
-                // Ring segments. When animating, each segment's visible arc
-                // is its final arc multiplied by `progress`, so the ring
-                // sweeps smoothly clockwise from 12-o'clock.
-                ForEach(Array(segments.enumerated()), id: \.offset) { idx, seg in
-                    let (start, end) = animatedAngles(upTo: idx, segments: segments, total: sum)
-                    Circle()
-                        .trim(from: start, to: end)
-                        .stroke(seg.color, style: StrokeStyle(lineWidth: lineWidth, lineCap: .butt))
-                        .rotationEffect(.degrees(-90))
-                        .frame(width: radius * 2, height: radius * 2)
-                }
+    @ViewBuilder
+    private var content: some View {
+        let sum = segments.reduce(0) { $0 + $1.value }
 
-                // Center number. When animating, counts up from 0 to the real
-                // value by interpolating the parsed double against `progress`.
-                VStack(spacing: 2) {
-                    Text(displayedCenterValue)
-                        .font(.system(size: 42, weight: .bold))
-                        .foregroundStyle(AppColor.primaryNavy)
-                        .contentTransition(.numericText())
-                    Text(centerLabel)
-                        .font(.atmosmCaption.bold())
-                        .foregroundStyle(AppColor.textSecondary)
-                }
+        ZStack {
+            // Ring segments. When animating, each segment's visible arc
+            // is its final arc multiplied by `progress`, so the ring
+            // sweeps smoothly clockwise from 12-o'clock.
+            ForEach(Array(segments.enumerated()), id: \.offset) { idx, seg in
+                let (start, end) = animatedAngles(upTo: idx, segments: segments, total: sum)
+                Circle()
+                    .trim(from: start, to: end)
+                    .stroke(seg.color, style: StrokeStyle(lineWidth: lineWidth, lineCap: .butt))
+                    .rotationEffect(.degrees(-90))
+                    .padding(lineWidth / 2)
+            }
 
-                // Optional highlight label (e.g. "20%" tooltip). Held back until
-                // the sweep is ~80% done so it doesn't appear over empty space.
-                if let idx = highlightIndex, let txt = highlightText, idx < segments.count {
+            // Center number. When animating, counts up from 0 to the real
+            // value by interpolating the parsed double against `progress`.
+            VStack(spacing: 2) {
+                Text(displayedCenterValue)
+                    .font(.system(size: 42, weight: .bold))
+                    .foregroundStyle(AppColor.primaryNavy)
+                    .contentTransition(.numericText())
+                    .minimumScaleFactor(0.5)
+                    .lineLimit(1)
+                Text(centerLabel)
+                    .font(.atmosmCaption.bold())
+                    .foregroundStyle(AppColor.textSecondary)
+            }
+
+            // Optional highlight label (e.g. "20%" tooltip). Held back until
+            // the sweep is ~80% done so it doesn't appear over empty space.
+            if let idx = highlightIndex, let txt = highlightText, idx < segments.count {
+                GeometryReader { geo in
+                    let radius = min(geo.size.width, geo.size.height) / 2 - lineWidth / 2
                     let (start, end) = angles(upTo: idx, segments: segments, total: sum)
                     let mid = (start + end) / 2
                     let angle = Angle(radians: Double(mid) * 2 * .pi - .pi / 2)
@@ -74,20 +97,21 @@ struct DonutChart: View {
                         .padding(.vertical, 4)
                         .background(Capsule().fill(Color.white))
                         .overlay(Capsule().stroke(AppColor.fieldBorder, lineWidth: 1))
-                        .offset(x: x, y: y)
+                        .position(
+                            x: geo.size.width  / 2 + x,
+                            y: geo.size.height / 2 + y
+                        )
                         .opacity(highlightOpacity)
                 }
             }
-            .frame(width: size, height: size)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .onAppear {
-                guard animated else { progress = 1; return }
-                if reduceMotion {
+        }
+        .onAppear {
+            guard animated else { progress = 1; return }
+            if reduceMotion {
+                progress = 1
+            } else {
+                withAnimation(.easeOut(duration: 0.9)) {
                     progress = 1
-                } else {
-                    withAnimation(.easeOut(duration: 0.9)) {
-                        progress = 1
-                    }
                 }
             }
         }
@@ -95,9 +119,6 @@ struct DonutChart: View {
 
     // MARK: - Geometry
 
-    // Final arc for a given segment — used for static positioning like the
-    // highlight tooltip, which should sit on its real slice mid-angle even
-    // while the ring is still being drawn.
     private func angles(upTo index: Int, segments: [DonutSegment], total: Double) -> (CGFloat, CGFloat) {
         guard total > 0 else { return (0, 0) }
         var start: Double = 0
@@ -106,10 +127,6 @@ struct DonutChart: View {
         return (CGFloat(start), CGFloat(start + seg))
     }
 
-    // Scaled arc used by the ring during the entry animation. When
-    // `animated == false` or on first render before the animation kicks
-    // in we still want the static chart to render, so we fall back to
-    // progress == 1 in the non-animated branch.
     private func animatedAngles(upTo index: Int, segments: [DonutSegment], total: Double) -> (CGFloat, CGFloat) {
         let (start, end) = angles(upTo: index, segments: segments, total: total)
         let p = animated ? progress : 1
@@ -118,19 +135,12 @@ struct DonutChart: View {
 
     // MARK: - Center value animation
 
-    // When animating, interpolate the numeric portion of `centerValue` so
-    // the displayed text counts up from 0 to the real value. We keep the
-    // user's formatting (decimal count, thousands separator) by looking at
-    // the original string.
     private var displayedCenterValue: String {
         guard animated else { return centerValue }
         let p = Double(progress)
-        // Try to parse a Double out of the label (supports "5.9", "1,234",
-        // "15,000" etc.). If we can't parse one, fall back to the raw label.
         let normalized = centerValue.replacingOccurrences(of: ",", with: "")
         guard let target = Double(normalized) else { return centerValue }
         let current = target * p
-        // Preserve decimal places from the original string.
         let decimals = decimalPlaces(in: centerValue)
         return formatted(current, decimals: decimals)
     }
@@ -138,7 +148,6 @@ struct DonutChart: View {
     private var highlightOpacity: Double {
         guard animated else { return 1 }
         let p = Double(progress)
-        // Fade in between 0.75 → 0.95 of the sweep.
         return max(0, min(1, (p - 0.75) / 0.20))
     }
 
@@ -151,11 +160,8 @@ struct DonutChart: View {
     }
 
     private func formatted(_ v: Double, decimals: Int) -> String {
-        let fmt = NumberFormatter()
-        fmt.numberStyle = .decimal
-        fmt.minimumFractionDigits = decimals
-        fmt.maximumFractionDigits = decimals
-        return fmt.string(from: NSNumber(value: v)) ?? "\(v)"
+        let d = min(max(decimals, 0), 3)
+        return Self.formatters[d]?.string(from: NSNumber(value: v)) ?? "\(v)"
     }
 }
 
