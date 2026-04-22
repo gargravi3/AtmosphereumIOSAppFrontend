@@ -149,16 +149,25 @@ struct HomeView: View {
             celebrating    = true
         }
 
-        // Tick ~25 fps, incrementing each value by 1 until it reaches
-        // the target. We advance both independently so if the two deltas
-        // differ the "slower" one still finishes smoothly.
-        let tickNanos: UInt64 = 40_000_000  // 40ms
+        // Tick ~60 fps, incrementing each value until it reaches the
+        // target. We advance both independently so if the two deltas
+        // differ the "slower" one still finishes smoothly. For large
+        // rewards (>60 coins) we step by more than 1 per tick so a
+        // 500-coin reward still completes in ~1.5s instead of 8s.
+        let tickNanos: UInt64 = 16_000_000  // ~16ms (60fps)
+        let deltaCoins = max(targetCoins - snapshot.oldCoins, 0)
+        let deltaKg    = max(targetKg    - snapshot.oldKg,    0)
+        let totalDurationSec: Double = 1.5
+        let totalTicks = max(Int(totalDurationSec / 0.016), 1)
+        let stepCoins = max(deltaCoins / totalTicks, 1)
+        let stepKg    = max(deltaKg    / totalTicks, 1)
+
         var c = snapshot.oldCoins
         var k = snapshot.oldKg
         while c < targetCoins || k < targetKg {
             try? await Task.sleep(nanoseconds: tickNanos)
-            if c < targetCoins { c += 1 }
-            if k < targetKg    { k += 1 }
+            c = min(c + stepCoins, targetCoins)
+            k = min(k + stepKg,    targetKg)
             await MainActor.run {
                 displayedCoins = c
                 displayedKg    = k
