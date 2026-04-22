@@ -32,8 +32,16 @@ struct AppShellView: View {
                                 )
                             case .refine:
                                 RefineView(
+                                    app: app,
+                                    path: $homePath,
                                     onBack: { homePath.removeLast() },
                                     onRestart: {}
+                                )
+                            case .refineCategory(let category):
+                                RefineCategoryEditor(
+                                    app: app,
+                                    path: $homePath,
+                                    category: category
                                 )
                             }
                         }
@@ -81,6 +89,7 @@ struct AppShellView: View {
 enum HomeRoute: Hashable {
     case footprint
     case refine
+    case refineCategory(RefineCategory)
 }
 
 #Preview {

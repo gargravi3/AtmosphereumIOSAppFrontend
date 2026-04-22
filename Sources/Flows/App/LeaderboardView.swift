@@ -60,10 +60,14 @@ struct LeaderboardView: View {
                             .foregroundStyle(AppColor.textSecondary)
                     }
 
-                    if isLoading {
+                    // Show the full-width spinner only on the very first
+                    // load. Later refreshes (pull-to-refresh, scope changes)
+                    // keep the last-known list visible underneath so rows
+                    // don't flash in/out.
+                    if isLoading && entries.isEmpty {
                         HStack { Spacer(); ProgressView(); Spacer() }
                             .padding(.vertical, 24)
-                    } else if let err = errorMessage {
+                    } else if entries.isEmpty, let err = errorMessage {
                         Text(err)
                             .font(.atmosmCaption)
                             .foregroundStyle(.red)
@@ -170,11 +174,19 @@ struct LeaderboardView: View {
         await MainActor.run { isLoading = true; errorMessage = nil }
         do {
             let res = try await NetworkService.shared.fetchLeaderboard(scope: scope, limit: 20)
+            // If the enclosing Task was cancelled (e.g. SwiftUI killed the
+            // pull-to-refresh task once the gesture ended), don't apply
+            // anything — just exit quietly.
+            try Task.checkCancellation()
             await MainActor.run {
                 entries = res.entries
                 myRank  = res.myRank
                 isLoading = false
             }
+        } catch is CancellationError {
+            await MainActor.run { isLoading = false }
+        } catch let urlErr as URLError where urlErr.code == .cancelled {
+            await MainActor.run { isLoading = false }
         } catch {
             await MainActor.run {
                 errorMessage = error.localizedDescription

@@ -35,7 +35,8 @@ struct FootprintDetailView: View {
                             centerValue: String(format: "%.1f", app.displayTons),
                             centerLabel: "TONS",
                             highlightIndex: topContributorIndex,
-                            highlightText: topContributorPercent
+                            highlightText: topContributorPercent,
+                            animated: true
                         )
                         .frame(width: 240, height: 240)
                         .padding(.top, 24)

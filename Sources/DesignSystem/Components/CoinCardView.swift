@@ -47,22 +47,85 @@ struct CoinCardView: View {
         switch style {
         case .navyCoin:
             if UIImage(named: "AtmosmCoin") != nil {
-                Image("AtmosmCoin").resizable().scaledToFit()
+                SpinningCoin { Image("AtmosmCoin").resizable().scaledToFit() }
             } else {
-                Image(systemName: "dollarsign.circle.fill")
-                    .resizable().scaledToFit()
-                    .foregroundStyle(.yellow)
+                SpinningCoin {
+                    Image(systemName: "dollarsign.circle.fill")
+                        .resizable().scaledToFit()
+                        .foregroundStyle(.yellow)
+                }
             }
         case .slateCloud:
             if UIImage(named: "CO2Cloud") != nil {
-                Image("CO2Cloud").resizable().scaledToFit()
-                    .colorInvert()
+                DriftingCloud {
+                    Image("CO2Cloud").resizable().scaledToFit().colorInvert()
+                }
             } else {
-                Image(systemName: "cloud.fill")
-                    .resizable().scaledToFit()
-                    .foregroundStyle(.white)
+                DriftingCloud {
+                    Image(systemName: "cloud.fill")
+                        .resizable().scaledToFit()
+                        .foregroundStyle(.white)
+                }
             }
         }
+    }
+}
+
+// MARK: - Coin: perspective Y-axis spin + gentle hover bob.
+// Both loops run concurrently with different periods so they never lock
+// into the same phase, which keeps the motion feeling organic. Honours
+// the user's Reduce Motion setting — when on, we keep the hover only
+// (since a small translation is much less vestibular-triggering than
+// a continuous rotation).
+private struct SpinningCoin<Content: View>: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var spin: Double = 0
+    @State private var hover: CGFloat = 0
+    let content: () -> Content
+
+    var body: some View {
+        content()
+            .rotation3DEffect(
+                .degrees(spin),
+                axis: (x: 0, y: 1, z: 0),
+                perspective: 0.85
+            )
+            .offset(y: hover)
+            .onAppear {
+                if !reduceMotion {
+                    withAnimation(.linear(duration: 6).repeatForever(autoreverses: false)) {
+                        spin = 360
+                    }
+                }
+                withAnimation(.easeInOut(duration: 2.8).repeatForever(autoreverses: true)) {
+                    hover = -6
+                }
+            }
+    }
+}
+
+// MARK: - Cloud: horizontal drift + vertical bob.
+// Slightly louder than the coin's ambient hover so the card doesn't feel
+// static; still low-amplitude so it reads as drifting, not rocking.
+private struct DriftingCloud<Content: View>: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var drift: CGFloat = 0
+    @State private var bob: CGFloat = 0
+    let content: () -> Content
+
+    var body: some View {
+        content()
+            .offset(x: drift, y: bob)
+            .onAppear {
+                if !reduceMotion {
+                    withAnimation(.easeInOut(duration: 2.6).repeatForever(autoreverses: true)) {
+                        drift = 9
+                    }
+                }
+                withAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true)) {
+                    bob = -5
+                }
+            }
     }
 }
 

@@ -212,6 +212,94 @@ final class OnboardingState {
         return req
     }
 
+    // Hydrate all onboarding + refine fields from a server profile, so the
+    // Refine screens land with the user's existing answers prefilled.
+    // Flips the didVisit* flag for each category that already has ANY
+    // non-nil value — that way a subsequent `profileUpdatePayload()` keeps
+    // the server's record for categories the user isn't touching right now.
+    func hydrate(from p: UserResponse) {
+        firstName = p.firstName
+        lastName  = p.lastName
+
+        if let interests = p.interests { selectedInterests = Set(interests) }
+        selectedRegion  = p.region
+        selectedIndustry = p.industry
+        otherIndustry   = p.otherIndustry
+
+        if let h = p.atmosmHandle { atmosmHandle = h }
+        country  = p.country
+        city     = p.city
+        function = p.functionRole
+
+        // --- Driving ---
+        if let m = p.transportModes { transportModes = Set(m) }
+        if let v = p.kmPerMonth          { kilometersPerMonth = v }
+        if let v = p.drivingModeMotorbikePct { drivingModeMotorbikePct = v }
+        if let v = p.drivingModeCarPct       { drivingModeCarPct       = v }
+        if let v = p.drivingModeTransitPct   { drivingModeTransitPct   = v }
+        if let v = p.drivingModeCyclingPct   { drivingModeCyclingPct   = v }
+        if let v = p.drivingModeWalkPct      { drivingModeWalkPct      = v }
+        drivingFuelType = p.drivingFuelType
+        if let v = p.officeCommuteKm         { officeCommuteKm         = v }
+        didVisitDriving = (p.transportModes != nil) || (p.kmPerMonth != nil)
+            || (p.drivingModeCarPct != nil) || (p.drivingFuelType != nil)
+
+        // --- Flights ---
+        if let v = p.flightsPerYear { flightsPerYear = v }
+        if let v = p.flightClass    { flightClass = v }
+        flightsEconomyPersonal  = p.flightsEconomyPersonal  ?? flightsEconomyPersonal
+        flightsEconomyWork      = p.flightsEconomyWork      ?? flightsEconomyWork
+        flightsBusinessPersonal = p.flightsBusinessPersonal ?? flightsBusinessPersonal
+        flightsBusinessWork     = p.flightsBusinessWork     ?? flightsBusinessWork
+        flightsFirstPersonal    = p.flightsFirstPersonal    ?? flightsFirstPersonal
+        flightsFirstWork        = p.flightsFirstWork        ?? flightsFirstWork
+        flightsLocalPersonal    = p.flightsLocalPersonal    ?? flightsLocalPersonal
+        flightsLocalWork        = p.flightsLocalWork        ?? flightsLocalWork
+        flightsRegionalPersonal = p.flightsRegionalPersonal ?? flightsRegionalPersonal
+        flightsRegionalWork     = p.flightsRegionalWork     ?? flightsRegionalWork
+        flightsGlobalPersonal   = p.flightsGlobalPersonal   ?? flightsGlobalPersonal
+        flightsGlobalWork       = p.flightsGlobalWork       ?? flightsGlobalWork
+        flightsExtendedPersonal = p.flightsExtendedPersonal ?? flightsExtendedPersonal
+        flightsExtendedWork     = p.flightsExtendedWork     ?? flightsExtendedWork
+        didVisitFlights = (p.flightsPerYear != nil) || (p.flightClass != nil)
+            || (p.flightsEconomyPersonal != nil) || (p.flightsLocalPersonal != nil)
+
+        // --- Food ---
+        foodVegan   = p.foodVegan   ?? foodVegan
+        foodDairy   = p.foodDairy   ?? foodDairy
+        foodFish    = p.foodFish    ?? foodFish
+        foodPoultry = p.foodPoultry ?? foodPoultry
+        foodRedMeat = p.foodRedMeat ?? foodRedMeat
+        foodLocal   = p.foodLocal   ?? foodLocal
+        if let v = p.foodWastePercent { foodWastePercent = v }
+        didVisitFood = (p.foodVegan != nil) || (p.foodRedMeat != nil) || (p.foodLocal != nil)
+
+        // --- Utilities ---
+        electricityBill = p.electricityBill ?? electricityBill
+        heatingBill     = p.heatingBill     ?? heatingBill
+        coolingBill     = p.coolingBill     ?? coolingBill
+        waterBill       = p.waterBill       ?? waterBill
+        wfhDays         = p.wfhDays         ?? wfhDays
+        if let v = p.householdSize { householdSize = v }
+        didVisitUtilities = (p.electricityBill != nil) || (p.heatingBill != nil)
+            || (p.coolingBill != nil) || (p.waterBill != nil) || (p.wfhDays != nil)
+            || (p.householdSize != nil)
+
+        // --- Waste ---
+        recyclePaper       = p.recyclePaper       ?? recyclePaper
+        recyclePlastic     = p.recyclePlastic     ?? recyclePlastic
+        recycleGlass       = p.recycleGlass       ?? recycleGlass
+        recycleMetal       = p.recycleMetal       ?? recycleMetal
+        recycleFood        = p.recycleFood        ?? recycleFood
+        recycleClothes     = p.recycleClothes     ?? recycleClothes
+        recycleFurniture   = p.recycleFurniture   ?? recycleFurniture
+        recycleElectronics = p.recycleElectronics ?? recycleElectronics
+        didVisitWaste = (p.recyclePaper != nil) || (p.recyclePlastic != nil)
+            || (p.recycleGlass != nil) || (p.recycleMetal != nil)
+            || (p.recycleFood != nil)  || (p.recycleClothes != nil)
+            || (p.recycleFurniture != nil) || (p.recycleElectronics != nil)
+    }
+
     // Fire-and-forget profile sync. Skips silently if we're not logged in
     // or the backend is unreachable — onboarding UX should not block.
     func syncProfile() {

@@ -4,8 +4,22 @@ struct DrivingView: View {
     @Bindable var state: OnboardingState
     let onBack: () -> Void
     let onNext: () -> Void
+    var startExpanded: Bool = false
 
-    @State private var showRefine: Bool = false
+    @State private var showRefine: Bool
+
+    init(
+        state: OnboardingState,
+        onBack: @escaping () -> Void,
+        onNext: @escaping () -> Void,
+        startExpanded: Bool = false
+    ) {
+        self.state = state
+        self.onBack = onBack
+        self.onNext = onNext
+        self.startExpanded = startExpanded
+        self._showRefine = State(initialValue: startExpanded)
+    }
 
     private let transportModes = ["Motorbike", "Car", "Train", "Bus", "Bicycle", "Walk"]
     private let fuelTypes = ["Diesel", "Petrol/Gasoline", "EV", "Hybrid", "CNG/LPG"]
