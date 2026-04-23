@@ -317,15 +317,86 @@ enum MatchTransport: String, CaseIterable, Hashable {
 enum MatchFood: String, CaseIterable, Hashable {
     case none
     case plantBased = "plant_based"
-    case chicken, beef, pie
+    case veggie
+    case meat
 
     var displayName: String {
         switch self {
-        case .none:       return "Nothing"
+        case .none:       return "Skipped food"
         case .plantBased: return "Plant-based"
-        case .chicken:    return "Chicken"
-        case .beef:       return "Beef"
-        case .pie:        return "Pie"
+        case .veggie:     return "Veggie"
+        case .meat:       return "Meat"
+        }
+    }
+
+    /// Short subtitle shown under the card so users understand what
+    /// each choice covers without having to guess.
+    var helperText: String {
+        switch self {
+        case .none:       return "Didn't grab anything"
+        case .plantBased: return "No meat or dairy"
+        case .veggie:     return "Dairy or cheese, no meat"
+        case .meat:       return "Burger, pie, chicken, sausage"
+        }
+    }
+
+    var systemIcon: String {
+        switch self {
+        case .none:       return "xmark.circle"
+        case .plantBased: return "leaf.fill"
+        case .veggie:     return "fork.knife"
+        case .meat:       return "flame.fill"
+        }
+    }
+
+    /// Tint used on the card icon. Kept in sync with the existing
+    /// chart palette so the page doesn't introduce new colours.
+    var tint: String {   // hex string — converted at use-site
+        switch self {
+        case .none:       return "#555555"        // neutral grey
+        case .plantBased: return "#3FC68F"        // chartGreen
+        case .veggie:     return "#F2A75C"        // chartOrange
+        case .meat:       return "#F46B5E"        // chartRed
+        }
+    }
+}
+
+// Rough-distance bucket for the travel step. Fans rarely know their
+// exact round-trip km — these four buckets cover every realistic case.
+enum MatchDistanceBucket: String, CaseIterable, Hashable, Identifiable {
+    case local       // <5km
+    case nearby      // 5-15km
+    case acrossTown  // 15-30km
+    case longTrip    // 30km+
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .local:       return "Local"
+        case .nearby:      return "Nearby"
+        case .acrossTown:  return "Across town"
+        case .longTrip:    return "Long trip"
+        }
+    }
+
+    var helperText: String {
+        switch self {
+        case .local:       return "Under 5 km"
+        case .nearby:      return "5 to 15 km"
+        case .acrossTown:  return "15 to 30 km"
+        case .longTrip:    return "Over 30 km"
+        }
+    }
+
+    /// Midpoint km value sent over the wire — good enough for the
+    /// emission calc since the buckets are coarse by design.
+    var representativeKm: Double {
+        switch self {
+        case .local:       return 2.5
+        case .nearby:      return 10.0
+        case .acrossTown:  return 22.5
+        case .longTrip:    return 40.0
         }
     }
 }
