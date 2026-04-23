@@ -25,6 +25,33 @@ struct AtmosmTextField<Field: Hashable>: View {
 
     @State private var isRevealed: Bool = false
 
+    // Fields whose content comes from the user's Contacts/Keychain —
+    // AutoFill needs the QuickType bar active to surface suggestions
+    // for these, so we never disable the predictive bar for them even
+    // if the caller passed `autocorrect: false`.
+    private var isAutoFillField: Bool {
+        guard let t = textContentType else { return false }
+        switch t {
+        case .givenName, .familyName, .middleName, .namePrefix, .nameSuffix,
+             .name, .nickname, .organizationName, .jobTitle,
+             .addressCity, .addressState, .addressCityAndState,
+             .streetAddressLine1, .streetAddressLine2, .sublocality,
+             .postalCode, .countryName, .fullStreetAddress,
+             .telephoneNumber, .username, .emailAddress:
+            return true
+        default:
+            return false
+        }
+    }
+
+    private var shouldDisableAutocorrect: Bool {
+        // Respect the caller's `autocorrect` flag in general, but never
+        // disable the QuickType bar for fields that depend on AutoFill
+        // suggestions (names, addresses, username, email).
+        if isAutoFillField { return false }
+        return !autocorrect
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(label)
@@ -34,7 +61,13 @@ struct AtmosmTextField<Field: Hashable>: View {
             ZStack(alignment: .trailing) {
                 inputField
                     .textInputAutocapitalization(capitalization)
-                    .autocorrectionDisabled(!autocorrect)
+                    // autocorrectionDisabled ALSO suppresses the QuickType
+                    // predictive bar — which is where AutoFill surfaces
+                    // Contact suggestions for name-type fields. So for
+                    // name-like fields we leave autocorrection on (iOS
+                    // won't "correct" a name token anyway) to keep the
+                    // bar available for autofill suggestions.
+                    .autocorrectionDisabled(shouldDisableAutocorrect)
                     .keyboardType(keyboardType)
                     .submitLabel(submitLabel)
                     .textContentType(textContentType)
