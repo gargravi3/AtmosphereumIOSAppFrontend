@@ -23,11 +23,13 @@ struct LeaderboardView: View {
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 0) {
-                // Top chart panel (light-blue bg)
-                VStack(spacing: 16) {
+                // Top chart panel (light-blue bg). 24pt between the chart
+                // and the legend; 24pt trailing breathing room before the
+                // white leaderboard panel takes over.
+                VStack(spacing: 24) {
                     HomeHeader(onMenu: onMenu)
                         .padding(.horizontal, 24)
-                        .padding(.top, 8)
+                        .padding(.top, 4)
 
                     StackedBarChart(bars: [
                         .init(label: "You",    total: app.displayTons, segments: app.breakdown),
@@ -35,7 +37,6 @@ struct LeaderboardView: View {
                         .init(label: "Global", total: 4.1, segments: scaled(app.breakdown, to: 4.1))
                     ], maxHeight: 240)
                     .padding(.horizontal, 24)
-                    .padding(.top, 8)
 
                     FlowLayout(spacing: 16, lineSpacing: 8) {
                         LegendDot(color: AppColor.chartRed,    label: "Driving")
@@ -46,8 +47,8 @@ struct LeaderboardView: View {
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.horizontal, 24)
-                    .padding(.bottom, 24)
                 }
+                .padding(.bottom, 24)
                 .background(AppColor.lightBlueBackground)
 
                 // Bottom leaderboard list (white bg)

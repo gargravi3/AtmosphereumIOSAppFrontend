@@ -25,27 +25,42 @@ struct FootprintDetailView: View {
                 .padding(.top, 4)
 
                 ScrollView(showsIndicators: false) {
-                    VStack(spacing: 16) {
-                        DonutChart(
-                            segments: app.breakdown,
-                            centerValue: String(format: "%.1f", app.displayTons),
-                            centerLabel: "TONS",
-                            highlightIndex: topContributorIndex,
-                            highlightText: topContributorPercent,
-                            animated: true
-                        )
-                        .frame(width: 240, height: 240)
-                        .padding(.top, 24)
+                    VStack(spacing: 24) {
+                        // White card anchors the chart + legend on the
+                        // light-blue page background; small shadow echoes
+                        // the Home CoinCardView containers.
+                        VStack(spacing: 16) {
+                            DonutChart(
+                                segments: app.breakdown,
+                                centerValue: String(format: "%.1f", app.displayTons),
+                                centerLabel: "TONS",
+                                highlightIndex: topContributorIndex,
+                                highlightText: topContributorPercent,
+                                animated: true
+                            )
+                            .frame(width: 240, height: 240)
+                            .padding(.top, 8)
 
-                        FlowLayout(spacing: 10, lineSpacing: 10) {
-                            ForEach(app.breakdown.filter { $0.value > 0 }, id: \.self) { seg in
-                                CategoryPill(title: seg.label, color: seg.color)
+                            FlowLayout(spacing: 16, lineSpacing: 10) {
+                                ForEach(app.breakdown.filter { $0.value > 0 }, id: \.self) { seg in
+                                    LegendDot(color: seg.color, label: seg.label)
+                                }
                             }
+                            .frame(maxWidth: .infinity)
+                            .padding(.horizontal, 8)
                         }
+                        .padding(.vertical, 16)
+                        .padding(.horizontal, 16)
                         .frame(maxWidth: .infinity)
+                        .background(
+                            RoundedRectangle(cornerRadius: AppRadius.large)
+                                .fill(Color.white)
+                                .shadow(color: .black.opacity(0.05), radius: 8, y: 2)
+                        )
                         .padding(.horizontal, 24)
+                        .padding(.top, 16)
 
-                        VStack(spacing: 2) {
+                        VStack(spacing: 4) {
                             Text("Your annual carbon footprint is")
                                 .font(.atmosmBody)
                                 .foregroundStyle(AppColor.textPrimary)
@@ -53,13 +68,11 @@ struct FootprintDetailView: View {
                                 .font(.atmosmBody.bold())
                                 .foregroundStyle(AppColor.textPrimary)
                         }
-                        .padding(.top, 4)
 
                         PrimaryButton(title: "Refine Your Estimate", style: .navy) {
                             onRefine()
                         }
                         .padding(.horizontal, 24)
-                        .padding(.top, 8)
                     }
                     .padding(.bottom, 24)
                 }

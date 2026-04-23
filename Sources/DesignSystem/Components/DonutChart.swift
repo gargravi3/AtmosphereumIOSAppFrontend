@@ -24,6 +24,9 @@ struct DonutChart: View {
     var animated: Bool = false
 
     private let lineWidth: CGFloat = 32
+    // Angular fraction (of the full circle) left blank between adjacent
+    // segments so each category reads as its own chunk. 0.006 ≈ 2.2°.
+    private let segmentGap: CGFloat = 0.006
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var progress: CGFloat = 0
@@ -59,9 +62,15 @@ struct DonutChart: View {
             // sweeps smoothly clockwise from 12-o'clock.
             ForEach(Array(segments.enumerated()), id: \.offset) { idx, seg in
                 let (start, end) = animatedAngles(upTo: idx, segments: segments, total: sum)
+                // Inset by segmentGap/2 on each side so adjacent arcs
+                // don't touch. Clamped so a tiny sliver segment doesn't
+                // collapse to nothing.
+                let inset = segmentGap / 2
+                let trimStart = min(start + inset, end)
+                let trimEnd   = max(end - inset, trimStart)
                 Circle()
-                    .trim(from: start, to: end)
-                    .stroke(seg.color, style: StrokeStyle(lineWidth: lineWidth, lineCap: .butt))
+                    .trim(from: trimStart, to: trimEnd)
+                    .stroke(seg.color, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
                     .rotationEffect(.degrees(-90))
                     .padding(lineWidth / 2)
             }
