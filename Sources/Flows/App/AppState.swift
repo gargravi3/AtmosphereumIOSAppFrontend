@@ -30,6 +30,12 @@ final class AppState {
     var catalog: [Goal] = []
     var myGoals: [UserGoal] = []
 
+    // Match-day Fan Page. Loaded lazily when the user actually opens
+    // the Fan page — we don't block Home on these endpoints because
+    // they're irrelevant for non-fans.
+    var matchSummary: MatchDaySummary? = nil
+    var matchLogs: [MatchDayEntry] = []
+
     var isLoadingProfile: Bool = false
     var profileError: String? = nil
 
@@ -144,6 +150,24 @@ final class AppState {
     /// already have this goal in their list?
     func myGoal(for goalID: UUID) -> UserGoal? {
         myGoals.first { $0.goalId == goalID }
+    }
+
+    // MARK: - Match-day
+
+    /// Pulls the user's match-day summary + historical logs. Safe to
+    /// call from any view that wants to display Fan-page data.
+    func loadMatchDay() async {
+        do {
+            async let summary = NetworkService.shared.fetchMatchDaySummary()
+            async let logs    = NetworkService.shared.fetchMatchDayLogs()
+            let (s, l) = try await (summary, logs)
+            await MainActor.run {
+                self.matchSummary = s
+                self.matchLogs    = l
+            }
+        } catch {
+            print("[AppState] loadMatchDay failed: \(error)")
+        }
     }
 }
 

@@ -242,6 +242,94 @@ struct CoinsResponse: Decodable {
     let annualTons: Double?
 }
 
+// MARK: - Match-day Fan Page
+
+struct MatchDayLogRequest: Encodable {
+    let club: String?
+    let matchDate: Date?
+    let transport: String
+    let distanceKm: Double
+    let foodChoice: String
+    let recycled: Bool
+    let reusableCup: Bool
+}
+
+struct MatchDayLogResponse: Decodable {
+    let id: UUID
+    let matchDate: Date
+    let transport: String
+    let distanceKm: Double
+    let foodChoice: String
+    let recycled: Bool
+    let reusableCup: Bool
+    let kgEmitted: Double
+    let coinsEarned: Int
+    let newTonsTotal: Double
+    let newCoinsTotal: Int
+}
+
+struct MatchDayEntry: Decodable, Identifiable, Hashable {
+    let id: UUID
+    let matchDate: Date
+    let transport: String
+    let distanceKm: Double
+    let foodChoice: String
+    let recycled: Bool
+    let reusableCup: Bool
+    let kgEmitted: Double
+    let coinsEarned: Int
+}
+
+struct MatchDaySummary: Decodable, Equatable {
+    let matchCount: Int
+    let totalKgEmitted: Double
+    let totalKgSaved: Double
+    let totalCoinsEarned: Int
+    let lastMatchDate: Date?
+    let averageKgPerMatch: Double
+}
+
+// User-facing names mirroring the backend's MatchTransport/MatchFood enums.
+enum MatchTransport: String, CaseIterable, Hashable {
+    case walk, bike, bus, train, car, rideshare
+    var displayName: String {
+        switch self {
+        case .walk:      return "Walk"
+        case .bike:      return "Bike"
+        case .bus:       return "Bus"
+        case .train:     return "Train"
+        case .car:       return "Car"
+        case .rideshare: return "Rideshare"
+        }
+    }
+    var systemIcon: String {
+        switch self {
+        case .walk:      return "figure.walk"
+        case .bike:      return "bicycle"
+        case .bus:       return "bus.fill"
+        case .train:     return "tram.fill"
+        case .car:       return "car.fill"
+        case .rideshare: return "car.2.fill"
+        }
+    }
+}
+
+enum MatchFood: String, CaseIterable, Hashable {
+    case none
+    case plantBased = "plant_based"
+    case chicken, beef, pie
+
+    var displayName: String {
+        switch self {
+        case .none:       return "Nothing"
+        case .plantBased: return "Plant-based"
+        case .chicken:    return "Chicken"
+        case .beef:       return "Beef"
+        case .pie:        return "Pie"
+        }
+    }
+}
+
 struct APIErrorBody: Decodable {
     let error: Bool?
     let reason: String?

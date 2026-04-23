@@ -91,6 +91,21 @@ actor NetworkService {
         try await send("GET", path: "/coins", body: Optional<Empty>.none, auth: true)
     }
 
+    // MARK: - Match-day Fan Page
+
+    @discardableResult
+    func logMatchDay(_ payload: MatchDayLogRequest) async throws -> MatchDayLogResponse {
+        try await send("POST", path: "/match-day", body: payload, auth: true)
+    }
+
+    func fetchMatchDayLogs() async throws -> [MatchDayEntry] {
+        try await send("GET", path: "/match-day", body: Optional<Empty>.none, auth: true)
+    }
+
+    func fetchMatchDaySummary() async throws -> MatchDaySummary {
+        try await send("GET", path: "/match-day/summary", body: Optional<Empty>.none, auth: true)
+    }
+
     // MARK: - Core
 
     private struct Empty: Encodable {}

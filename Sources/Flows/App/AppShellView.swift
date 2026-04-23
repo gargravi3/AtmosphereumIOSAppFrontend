@@ -10,6 +10,10 @@ struct AppShellView: View {
     @State private var reducePath = NavigationPath()
     @State private var showMenu = false
 
+    // Persisted across app launches. Once dismissed, the Brentford promo
+    // never reappears on Home — the Fan page is still reachable via menu.
+    @AppStorage("atmosm.dismissedMatchPromo") private var dismissedMatchPromo = false
+
     var body: some View {
         VStack(spacing: 0) {
             ZStack {
@@ -20,7 +24,14 @@ struct AppShellView: View {
                             app: app,
                             onShowFootprint: { homePath.append(HomeRoute.footprint) },
                             onBrowseReduce: { app.selectedTab = .reduce },
-                            onMenu:   { showMenu = true }
+                            onMenu:   { showMenu = true },
+                            showMatchPromo: !dismissedMatchPromo,
+                            onOpenFanPage: { homePath.append(HomeRoute.fanPage) },
+                            onDismissMatchPromo: {
+                                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                    dismissedMatchPromo = true
+                                }
+                            }
                         )
                         .navigationDestination(for: HomeRoute.self) { route in
                             switch route {
@@ -42,6 +53,17 @@ struct AppShellView: View {
                                     app: app,
                                     path: $homePath,
                                     category: category
+                                )
+                            case .fanPage:
+                                FanPageView(
+                                    app: app,
+                                    onBack:     { homePath.removeLast() },
+                                    onLogMatch: { homePath.append(HomeRoute.logMatch) }
+                                )
+                            case .logMatch:
+                                LogMatchDayView(
+                                    app: app,
+                                    onBack: { homePath.removeLast() }
                                 )
                             }
                         }
@@ -80,6 +102,15 @@ struct AppShellView: View {
         .background(AppColor.lightBlueBackground)
         .ignoresSafeArea(.keyboard)
         .confirmationDialog("Account", isPresented: $showMenu, titleVisibility: .visible) {
+            Button("Match Day (Brentford FC)") {
+                app.selectedTab = .home
+                // Always push — if the user is already on the Fan page,
+                // this is a no-op in the visible state. NavigationPath
+                // doesn't expose duplicate-detection and dedup'ing would
+                // require encoding the path to JSON every tap, which is
+                // overkill for a menu entry.
+                homePath.append(HomeRoute.fanPage)
+            }
             Button("Log Out", role: .destructive) { onLogout() }
             Button("Cancel", role: .cancel) {}
         }
@@ -90,6 +121,8 @@ enum HomeRoute: Hashable {
     case footprint
     case refine
     case refineCategory(RefineCategory)
+    case fanPage
+    case logMatch
 }
 
 #Preview {

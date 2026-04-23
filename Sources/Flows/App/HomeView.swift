@@ -10,6 +10,11 @@ struct HomeView: View {
     let onShowFootprint: () -> Void
     let onBrowseReduce: () -> Void
     let onMenu: () -> Void
+    // Brentford Match Day promo card. Hidden once the user dismisses it —
+    // AppShellView owns the dismissed flag via @AppStorage so it persists.
+    var showMatchPromo: Bool = false
+    var onOpenFanPage: () -> Void = {}
+    var onDismissMatchPromo: () -> Void = {}
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -75,6 +80,15 @@ struct HomeView: View {
                             zeroCoinCTA
                                 .padding(.top, 4)
                                 .transition(.opacity.combined(with: .move(edge: .top)))
+                        }
+
+                        if showMatchPromo {
+                            MatchDayPromoCard(
+                                onOpen: onOpenFanPage,
+                                onDismiss: onDismissMatchPromo
+                            )
+                            .padding(.top, 4)
+                            .transition(.opacity.combined(with: .move(edge: .top)))
                         }
 
                         Group {

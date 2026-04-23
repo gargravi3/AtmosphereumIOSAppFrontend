@@ -56,6 +56,12 @@ enum AppColor {
     // Card tones — keep these named so design shifts don't require edits
     // at every call site.
     static let slateCard = Color.black.opacity(0.6)
+
+    // Brentford FC — used only by the Fan Page / Match Day feature.
+    // Kept in the shared palette (rather than a dedicated club file) so
+    // multi-club support later can swap these values in one place.
+    static let brentfordRed  = Color(hex: "#E30613")
+    static let brentfordGold = Color(hex: "#FBB800")
 }
 
 // Standard corner-radius scale. Use these instead of magic numbers so the
