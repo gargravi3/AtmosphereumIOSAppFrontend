@@ -18,6 +18,10 @@ struct AuthResponse: Decodable {
     let user: UserResponse
 }
 
+struct EmailAvailabilityResponse: Decodable {
+    let available: Bool
+}
+
 struct UserResponse: Codable {
     let id: UUID
     let email: String

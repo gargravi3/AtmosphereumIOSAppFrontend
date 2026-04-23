@@ -3,6 +3,11 @@ import SwiftUI
 struct OnboardingCoordinator: View {
     var onFinished: () -> Void = {}
     var onBack: () -> Void = {}
+    // Forwarded to the app shell so the Welcome route can switch to
+    // LoginView with the email pre-filled after the user taps the
+    // "Log in instead" hint on the signup screen.
+    var onSwitchToLogin: (String) -> Void = { _ in }
+
     @State private var path = NavigationPath()
     @State private var state = OnboardingState()
 
@@ -12,7 +17,8 @@ struct OnboardingCoordinator: View {
                 state: state,
                 onContinue: { path.append(OnboardingStep.interests) },
                 onTerms:    { path.append(OnboardingStep.terms) },
-                onBack:     onBack
+                onBack:     onBack,
+                onSwitchToLogin: onSwitchToLogin
             )
             .navigationDestination(for: OnboardingStep.self) { step in
                 switch step {

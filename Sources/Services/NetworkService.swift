@@ -43,6 +43,22 @@ actor NetworkService {
         KeychainHelper.clearToken()
     }
 
+    /// Pre-submit uniqueness probe. Used by the signup form to flag a
+    /// duplicate email while the user is still typing. The URL-encoded
+    /// email is sent in the query string; server normalises to lower-case.
+    func checkEmailAvailable(_ email: String) async throws -> Bool {
+        let trimmed = email.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return false }
+        let encoded = trimmed.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? trimmed
+        let res: EmailAvailabilityResponse = try await send(
+            "GET",
+            path: "/auth/email-available?email=\(encoded)",
+            body: Optional<Empty>.none,
+            auth: false
+        )
+        return res.available
+    }
+
     var isAuthenticated: Bool {
         KeychainHelper.loadToken() != nil
     }

@@ -10,6 +10,9 @@ enum AppRoute {
 struct ContentView: View {
     @State private var showSplash = true
     @State private var route: AppRoute = .welcome
+    // Pre-fill value handed off when the signup view's email hint says
+    // "already registered → Log in instead". Cleared after consumption.
+    @State private var loginPrefillEmail: String = ""
 
     var body: some View {
         ZStack {
@@ -44,13 +47,21 @@ struct ContentView: View {
                 onFinished: {
                     withAnimation(.easeInOut(duration: 0.35)) { route = .app }
                 },
-                onBack: { withAnimation { route = .welcome } }
+                onBack: { withAnimation { route = .welcome } },
+                onSwitchToLogin: { email in
+                    loginPrefillEmail = email
+                    withAnimation(.easeInOut(duration: 0.25)) { route = .login }
+                }
             )
 
         case .login:
             LoginView(
+                initialEmail: loginPrefillEmail,
                 onLoggedIn: { withAnimation(.easeInOut(duration: 0.35)) { route = .app } },
-                onBack:     { withAnimation { route = .welcome } }
+                onBack:     {
+                    loginPrefillEmail = ""
+                    withAnimation { route = .welcome }
+                }
             )
 
         case .app:

@@ -1,6 +1,9 @@
 import SwiftUI
 
 struct LoginView: View {
+    // Optional pre-fill (e.g. handed off from signup's "already
+    // registered → log in instead" hint). Empty = normal entry.
+    var initialEmail: String = ""
     let onLoggedIn: () -> Void
     let onBack: () -> Void
 
@@ -8,6 +11,7 @@ struct LoginView: View {
     @State private var password: String = ""
     @State private var isSubmitting: Bool = false
     @State private var errorMessage: String? = nil
+    @State private var didApplyInitialEmail: Bool = false
 
     private enum Field: Hashable { case email, password }
     @FocusState private var focus: Field?
@@ -99,6 +103,15 @@ struct LoginView: View {
             }
         }
         .navigationBarBackButtonHidden()
+        .onAppear {
+            // Only honour the hand-off once so returning to the view
+            // (e.g. after an error) doesn't overwrite in-progress edits.
+            if !didApplyInitialEmail && !initialEmail.isEmpty {
+                email = initialEmail
+                didApplyInitialEmail = true
+                focus = .password
+            }
+        }
     }
 
     private func submit() {

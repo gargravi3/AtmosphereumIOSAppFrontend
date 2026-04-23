@@ -13,6 +13,11 @@ final class OnboardingState {
     var isSubmitting: Bool = false
     var signupError: String? = nil
 
+    // Live pre-submit uniqueness probe for the email field. The signup
+    // view flips this to .checking while a debounced request is in
+    // flight, and the final result gates isSignupValid.
+    var emailStatus: EmailAvailability = .unknown
+
     // Interests
     var selectedInterests: Set<String> = []
 
@@ -112,6 +117,7 @@ final class OnboardingState {
         !firstName.isEmpty &&
         !lastName.isEmpty &&
         Self.isLikelyEmail(email) &&
+        emailStatus == .available &&
         password.count >= 8 &&
         password == confirmPassword
     }
@@ -352,4 +358,16 @@ enum TrackerCategory: String, CaseIterable, Hashable {
 
     // Full order as shown in Figma tracker
     static let order: [TrackerCategory] = [.driving, .flights, .food, .utilities, .industry, .waste]
+}
+
+// Email uniqueness states used by the signup form's inline hint.
+// .unknown is the starting state (nothing typed yet, or format invalid).
+// .checking covers the debounce + in-flight probe. .available means the
+// server confirmed it's free; .taken means a user already owns it.
+enum EmailAvailability: Equatable {
+    case unknown
+    case invalidFormat
+    case checking
+    case available
+    case taken
 }
